@@ -10,6 +10,7 @@ import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft"
 import TextField from "@mui/material/TextField"
 import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight"
 import KeyboardDoubleArrowRightIcon from "@mui/icons-material/KeyboardDoubleArrowRight"
+import ROSLIB from 'roslib';
 
 const Item = styled(Paper)(({ theme }) => ({
   backgroundColor: theme?.palette?.mode === 'dark' ? '#1A2027' : '#fff',
@@ -27,13 +28,41 @@ const ItemTitle = styled(Typography)(({ theme }) => ({
 
 function NumberField(props) {
   const { name, value } = props
-  const { setCameraOffset } = useContext(AppContext)
+  const { setCameraOffset, ROS2_HOST, ROS2_PORT } = useContext(AppContext)
+
+  const ros = new ROSLIB.Ros({
+    url: `ws://${ROS2_HOST}:${ROS2_PORT}`,
+  });
 
   function addValue(changeValue) {
     setCameraOffset((prev) => ({
       ...prev,
       [name]: prev[name] + changeValue,
     }))
+
+    const service = new ROSLIB.Service({
+      ros: ros,
+      name: 'robot_frames/update_camera_offset',
+      serviceType: 'robot_frames_interfaces/srv/UpdateCameraOffset',
+    });
+
+    const request = new ROSLIB.ServiceRequest({
+      x: name === 'x' ? value + changeValue : value,
+      y: name === 'y' ? value + changeValue : value,
+      z: name === 'z' ? value + changeValue : value,
+      roll: name === 'roll' ? value + changeValue : value,
+      pitch: name === 'pitch' ? value + changeValue : value,
+      yaw: name === 'yaw' ? value + changeValue : value,
+      save: false,
+    });
+
+    service.callService(request, (result) => {
+      if (result.ok) {
+        console.log('Camera offset saved');
+      } else {
+        console.error('Failed to save camera offset');
+      }
+    });
   }
 
   return (
