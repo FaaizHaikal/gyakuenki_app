@@ -65,6 +65,37 @@ function NumberField(props) {
     });
   }
 
+  function changeValue(newValue) {
+    setCameraOffset((prev) => ({
+      ...prev,
+      [name]: newValue,
+    }))
+
+    const service = new ROSLIB.Service({
+      ros: ros,
+      name: 'robot_frames/update_camera_offset',
+      serviceType: 'robot_frames_interfaces/srv/UpdateCameraOffset',
+    });
+
+    const request = new ROSLIB.ServiceRequest({
+      x: name === 'x' ? newValue : value,
+      y: name === 'y' ? newValue : value,
+      z: name === 'z' ? newValue : value,
+      roll: name === 'roll' ? newValue : value,
+      pitch: name === 'pitch' ? newValue : value,
+      yaw: name === 'yaw' ? newValue : value,
+      save: false,
+    });
+
+    service.callService(request, (result) => {
+      if (result.ok) {
+        console.log('Camera offset saved');
+      } else {
+        console.error('Failed to save camera offset');
+      }
+    });
+  }
+
   return (
     <Item>
       <Grid2 container spacing={1}>
